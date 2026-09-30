@@ -12,6 +12,16 @@
       "background.js"
     ]
   },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "azrafe7@gmail.com_modal-unlocker",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  },
   "action": {
     "default_title": "Remove modal & unlock scroll",
     "default_icon": {
