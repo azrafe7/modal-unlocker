@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Modal Remover test page</title>
+<style>
+  body{font:16px/1.6 system-ui,sans-serif;margin:0;padding:40px;max-width:720px;margin-inline:auto;overflow:hidden}
+  #overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center}
+  #box{background:#fff;padding:32px 40px;border-radius:12px;text-align:center}
+</style></head><body>
+<h1>Test article</h1>
+<p>If you can scroll this page, the extension worked. Before clicking the extension icon, the body is scroll-locked and covered by an overlay.</p>
+<script>for(let i=1;i<=30;i++)document.write('<p>Paragraph '+i+'. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.</p>')</script>
+<div id="overlay"><div id="box"><h2>Subscribe to keep reading</h2><p>This overlay covers the whole window and locks scrolling.</p></div></div>
+</body></html>
