@@ -8,7 +8,9 @@
     "scripting"
   ],
   "background": {
-    "service_worker": "background.js"
+    "scripts": [
+      "background.js"
+    ]
   },
   "action": {
     "default_title": "Remove modal & unlock scroll",
