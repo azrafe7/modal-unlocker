@@ -105,6 +105,10 @@
 
     debug.log(fullModals.length > 0 ? `Unlocking ${fullModals.length} full modals...` : "No full modals to unlock!");
     unlockAndRemove(fullModals);
+    
+    const body = document.body;
+    debug.log("Unlocking body...");
+    unlockAndRemove([body]);
   }
 
   unlockAndRemoveFullModals();
