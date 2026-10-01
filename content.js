@@ -33,6 +33,26 @@
       isScreenLocked.reasons.push(['documentElement', 'overflowY:hidden']);
       doc.documentElement.style.setProperty('overflow', 'auto', 'important');
     }
+    if (getStyleValue(doc.documentElement, 'overscroll-behavior') === 'none') {
+      isScreenLocked.value = true;
+      isScreenLocked.reasons.push(['documentElement', 'overscroll-behavior:none']);
+      doc.documentElement.style.setProperty('overscroll-behavior', 'auto', 'important');
+    }
+    if (getStyleValue(doc.documentElement, 'overscroll-behavior-y') === 'none') {
+      isScreenLocked.value = true;
+      isScreenLocked.reasons.push(['documentElement', 'overscroll-behavior-y:none']);
+      doc.documentElement.style.setProperty('overscroll-behavior-y', 'auto', 'important');
+    }
+    if (getStyleValue(doc.body, 'overscroll-behavior') === 'none') {
+      isScreenLocked.value = true;
+      isScreenLocked.reasons.push(['body', 'overscroll-behavior:none']);
+      doc.body.style.setProperty('overscroll-behavior', 'auto', 'important');
+    }
+    if (getStyleValue(doc.body, 'overscroll-behavior-y') === 'none') {
+      isScreenLocked.value = true;
+      isScreenLocked.reasons.push(['body', 'overscroll-behavior-y:none']);
+      doc.body.style.setProperty('overscroll-behavior-y', 'auto', 'important');
+    }
   }
 
   // credits to https://github.com/gorhill/uBlock/blob/master/src/js/scriptlets/epicker.js
@@ -61,6 +81,7 @@
       e => ['fixed', 'sticky'].includes(getComputedStyle(e).position)
     );
 
+    debugger;
     debug.log(`stickies: ${stickies.length}`);
     if (stickies.length > 0) debug.log(stickies);
 
