@@ -26,3 +26,6 @@ GOOD TO KNOW <br>
 • It works on the page in your browser only. If a site withholds content from your browser until you act, removing the overlay will not make that content appear. <br>
 • Some sites use full-screen elements on purpose (video players, web apps). Use the button only when you are blocked by an unwanted overlay; reloading the page brings everything back. <br>
 • Results vary by site, because every site builds its overlays differently.
+
+
+Test page: [https://azrafe7.github.io/modal-unlocker/test-page.html](https://azrafe7.github.io/modal-unlocker/test-page.html)
