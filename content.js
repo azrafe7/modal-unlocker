@@ -1,146 +1,105 @@
-// check https://weser.io/blog/scroll-blocking-overlays for more test pages
-
 (() => {
   const DEBUG = true;
-  const debug = {
-    log: DEBUG ? console.log.bind(console) : () => {},
-    table: DEBUG ? console.table.bind(console) : () => {}
-  };
+  const DEBUG_PREFIX = "[MR&SU]";
+  const log = DEBUG ? console.log.bind(console, '[MR&SU]') : () => {};
 
-  function getStyleValue(elem, prop) {
-    const style = elem ? window.getComputedStyle(elem) : null;
-    return style ? style[prop] : '';
+  const html = document.documentElement;
+  const body = document.body;
+  const force = (el, prop, value) => el.style.setProperty(prop, value, 'important');
+
+  // ---------------------------------------------------------------------------
+  // 1. Find full-screen fixed overlays
+  // ---------------------------------------------------------------------------
+  function findOverlays() {
+    const vw = html.clientWidth, vh = html.clientHeight;
+    const iw = window.innerWidth, ih = window.innerHeight;
+    const found = [];
+
+    for (const el of document.querySelectorAll('*')) {
+      if (el === html || el === body) continue;
+
+      const cs = getComputedStyle(el);
+      // Overlays are fixed. 'sticky' is skipped: pinned 100vh sections are content.
+      if (cs.position !== 'fixed') continue;
+      if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+
+      const w = parseFloat(cs.width), h = parseFloat(cs.height);
+      const isFull =
+        (w + 1 >= vw && h + 1 >= vh) ||
+        (w + 10 >= iw && h + 10 >= ih);
+      if (!isFull) continue;
+
+      // Fixed app roots / page wrappers hold the real content: leave them alone.
+      if (el.matches('main, article, [role="main"]') ||
+          el.querySelector('main, article, [role="main"]')) continue;
+
+      found.push(el);
+    }
+    log(`overlays: ${found.length}`, found);
+    return found;
   }
 
-  function unlockScreen(elem) {
-    const doc = document;
-    const isScreenLocked = { elem: elem, value: false, reasons: [] };
-    if (getStyleValue(doc.body, 'overflowY') === 'hidden') {
-      isScreenLocked.value = true;
-      isScreenLocked.reasons.push(['body', 'overflowY:hidden']);
-      doc.body.style.setProperty('overflow', 'auto', 'important');
-    }
-    if (getStyleValue(doc.body, 'position') === 'fixed') {
-      isScreenLocked.value = true;
-      isScreenLocked.reasons.push(['body', 'position:fixed']);
-      doc.body.style.setProperty('position', 'initial', 'important');
-    }
-    if (getStyleValue(doc.documentElement, 'position') === 'fixed') {
-      isScreenLocked.value = true;
-      isScreenLocked.reasons.push(['documentElement', 'position:fixed']);
-      doc.documentElement.style.setProperty('position', 'initial', 'important');
-    }
-    if (getStyleValue(doc.documentElement, 'overflowY') === 'hidden') {
-      isScreenLocked.value = true;
-      isScreenLocked.reasons.push(['documentElement', 'overflowY:hidden']);
-      doc.documentElement.style.setProperty('overflow', 'auto', 'important');
-    }
-    if (getStyleValue(doc.documentElement, 'overscroll-behavior') === 'none') {
-      isScreenLocked.value = true;
-      isScreenLocked.reasons.push(['documentElement', 'overscroll-behavior:none']);
-      doc.documentElement.style.setProperty('overscroll-behavior', 'auto', 'important');
-    }
-    if (getStyleValue(doc.documentElement, 'overscroll-behavior-y') === 'none') {
-      isScreenLocked.value = true;
-      isScreenLocked.reasons.push(['documentElement', 'overscroll-behavior-y:none']);
-      doc.documentElement.style.setProperty('overscroll-behavior-y', 'auto', 'important');
-    }
-    if (getStyleValue(doc.body, 'overscroll-behavior') === 'none') {
-      isScreenLocked.value = true;
-      isScreenLocked.reasons.push(['body', 'overscroll-behavior:none']);
-      doc.body.style.setProperty('overscroll-behavior', 'auto', 'important');
-    }
-    if (getStyleValue(doc.body, 'overscroll-behavior-y') === 'none') {
-      isScreenLocked.value = true;
-      isScreenLocked.reasons.push(['body', 'overscroll-behavior-y:none']);
-      doc.body.style.setProperty('overscroll-behavior-y', 'auto', 'important');
-    }
-    debug.log(isScreenLocked);
-  }
-
-  // credits to https://github.com/gorhill/uBlock/blob/master/src/js/scriptlets/epicker.js
-  function unlockScreenIfLocked(elemToRemove) {
-    // Heuristic to detect scroll-locking: remove such lock when detected.
-    let maybeScrollLocked = elemToRemove.shadowRoot instanceof DocumentFragment;
-    if (maybeScrollLocked === false) {
-      let elem = elemToRemove;
-      do {
-        maybeScrollLocked =
-          parseInt(getStyleValue(elem, 'zIndex'), 10) >= 1000 ||
-          getStyleValue(elem, 'position') === 'fixed' ||
-          getStyleValue(elem, 'overflow-y') === 'hidden' ||
-          getStyleValue(elem, 'overscroll-behavior-y') === 'none';
-        elem = elem.parentElement;
-      } while (elem !== null && maybeScrollLocked === false);
-    }
-    if (maybeScrollLocked) {
-      unlockScreen(elemToRemove);
+  // Hide instead of remove: frameworks such as React can throw if a node they
+  // manage disappears from the DOM. A page reload restores everything.
+  function hideAll(elements) {
+    for (const el of elements) {
+      force(el, 'display', 'none');
+      log('Hidden', el);
     }
   }
 
-  function getStickies(elements) {
-    if (!elements) elements = document.all;
-
-    const stickies = [].filter.call(
-      elements,
-      e => ['fixed', 'sticky'].includes(getComputedStyle(e).position)
-    );
-
-    debug.log(`stickies: ${stickies.length}`);
-    if (stickies.length > 0) debug.log(stickies);
-
-    return stickies;
+  // ---------------------------------------------------------------------------
+  // 2. Restore page scrolling
+  // ---------------------------------------------------------------------------
+  // position:fixed locks usually use top:-<scrollOffset>px; undo it and
+  // put the user back where they were.
+  function unfix(el) {
+    const y = -parseInt(getComputedStyle(el).top, 10) || 0;
+    force(el, 'position', 'static');
+    force(el, 'top', 'auto');
+    if (y > 0) window.scrollTo(0, y);
+    log(`Unfixed <${el.tagName.toLowerCase()}>, restored scroll to ${y}`);
   }
 
-  function getFullModals(elements) {
-    const docSize = {
-      width: document.documentElement.clientWidth,
-      height: document.documentElement.clientHeight
-    };
-    const winSize = {
-      width: window.innerWidth,
-      height: window.innerHeight
-    };
+  const isClipped = (cs) => ['hidden', 'clip'].includes(cs.overflowY);
+  const hasHiddenContent = (el) => el.scrollHeight > el.clientHeight + 1;
 
-    debug.log(`doc size: ${docSize.width}x${docSize.height}`);
-    debug.log(`win size: ${winSize.width}x${winSize.height}`);
+  function unlockScroll() {
+    const targets = [html, body].filter(Boolean);
 
-    const fullModals = elements.filter(function (el) {
-      const style = getComputedStyle(el);
-      const size = { width: parseFloat(style['width']), height: parseFloat(style['height']) };
-      return ((size.width + 1) >= docSize.width && (size.height + 1) >= docSize.height) ||
-      ((size.width + 10) >= winSize.width && (size.height + 10) >= winSize.height);
-    });
+    // Step 1: undo position:fixed locks (this changes layout, so do it first).
+    for (const el of targets) {
+      if (getComputedStyle(el).position === 'fixed') unfix(el);
+    }
 
-    debug.log(`full modals: ${fullModals.length}`);
-    if (fullModals.length > 0) debug.log(fullModals);
+    // Step 2: overflow locks. Only touched when there is content to scroll to,
+    // so app-style pages that clip by design are left alone.
+    const htmlLocked = isClipped(getComputedStyle(html)) && hasHiddenContent(html);
+    if (htmlLocked) {
+      force(html, 'overflow', 'auto');
+      log('html overflow reset');
+    }
+    if (body) {
+      const bodyLocked =
+        isClipped(getComputedStyle(body)) &&
+        (hasHiddenContent(body) || hasHiddenContent(html));
+      if (bodyLocked) {
+        // If <html> was also locked, body's overflow no longer propagates to
+        // the viewport; 'visible' avoids creating a nested scroller.
+        force(body, 'overflow', htmlLocked ? 'visible' : 'auto');
+        log('body overflow reset');
+      }
+    }
 
-    return fullModals;
-  }
-
-  function unlockAndRemove(elements) {
-    for (let el of elements) {
-      unlockScreenIfLocked(el);
-      if (!['HTML', 'BODY'].includes(el.tagName)) {
-        debug.log("Unlocked & Removed", el);
-        el.remove();
-      } else {
-        debug.log("Unlocked", el);
+    // Step 3: touch-scroll blockers.
+    for (const el of targets) {
+      if (getComputedStyle(el).touchAction === 'none') {
+        force(el, 'touch-action', 'auto');
+        log(`touch-action reset on <${el.tagName.toLowerCase()}>`);
       }
     }
   }
 
-  function unlockAndRemoveFullModals() {
-    const stickies = getStickies();
-    const fullModals = getFullModals(stickies);
-
-    debug.log(fullModals.length > 0 ? `Unlocking ${fullModals.length} full modals...` : "No full modals to unlock!");
-    unlockAndRemove(fullModals);
-    
-    const body = document.body;
-    debug.log("Unlocking body...");
-    unlockAndRemove([body]);
-  }
-
-  unlockAndRemoveFullModals();
+  hideAll(findOverlays());
+  unlockScroll();
 })();
