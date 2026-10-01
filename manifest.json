@@ -1,26 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Modal Remover & Scroll Unlocker",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Remove full-screen pop-ups and overlays and restore page scrolling with one click. On-demand, private, no tracking.",
   "permissions": [
     "activeTab",
     "scripting"
   ],
   "background": {
-    "scripts": [
-      "background.js"
-    ]
-  },
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "azrafe7@gmail.com_modal-unlocker",
-      "data_collection_permissions": {
-        "required": [
-          "none"
-        ]
-      }
-    }
+    "service_worker": "background.js"
   },
   "action": {
     "default_title": "Remove modal & unlock scroll",

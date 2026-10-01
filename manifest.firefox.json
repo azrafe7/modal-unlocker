@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Modal Remover & Scroll Unlocker",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Remove full-screen pop-ups and overlays and restore page scrolling with one click. On-demand, private, no tracking.",
   "permissions": [
     "activeTab",
