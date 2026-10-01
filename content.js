@@ -1,3 +1,5 @@
+// check https://weser.io/blog/scroll-blocking-overlays for more test pages
+
 (() => {
   const DEBUG = true;
   const debug = {
@@ -53,6 +55,7 @@
       isScreenLocked.reasons.push(['body', 'overscroll-behavior-y:none']);
       doc.body.style.setProperty('overscroll-behavior-y', 'auto', 'important');
     }
+    debug.log(isScreenLocked);
   }
 
   // credits to https://github.com/gorhill/uBlock/blob/master/src/js/scriptlets/epicker.js
@@ -64,7 +67,9 @@
       do {
         maybeScrollLocked =
           parseInt(getStyleValue(elem, 'zIndex'), 10) >= 1000 ||
-          getStyleValue(elem, 'position') === 'fixed';
+          getStyleValue(elem, 'position') === 'fixed' ||
+          getStyleValue(elem, 'overflow-y') === 'hidden' ||
+          getStyleValue(elem, 'overscroll-behavior-y') === 'none';
         elem = elem.parentElement;
       } while (elem !== null && maybeScrollLocked === false);
     }
@@ -81,7 +86,6 @@
       e => ['fixed', 'sticky'].includes(getComputedStyle(e).position)
     );
 
-    debugger;
     debug.log(`stickies: ${stickies.length}`);
     if (stickies.length > 0) debug.log(stickies);
 
@@ -93,13 +97,19 @@
       width: document.documentElement.clientWidth,
       height: document.documentElement.clientHeight
     };
+    const winSize = {
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
 
-    debug.log(`win size: ${docSize.width}x${docSize.height}`);
+    debug.log(`doc size: ${docSize.width}x${docSize.height}`);
+    debug.log(`win size: ${winSize.width}x${winSize.height}`);
 
     const fullModals = elements.filter(function (el) {
       const style = getComputedStyle(el);
       const size = { width: parseFloat(style['width']), height: parseFloat(style['height']) };
-      return (size.width + 1) >= docSize.width && (size.height + 1) >= docSize.height;
+      return ((size.width + 1) >= docSize.width && (size.height + 1) >= docSize.height) ||
+      ((size.width + 10) >= winSize.width && (size.height + 10) >= winSize.height);
     });
 
     debug.log(`full modals: ${fullModals.length}`);
