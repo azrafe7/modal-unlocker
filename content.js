@@ -90,7 +90,7 @@
   function unlockAndRemove(elements) {
     for (let el of elements) {
       unlockScreenIfLocked(el);
-      if (el.tagName !== 'BODY') {
+      if (!['HTML', 'BODY'].includes(el.tagName)) {
         debug.log("Unlocked & Removed", el);
         el.remove();
       } else {
